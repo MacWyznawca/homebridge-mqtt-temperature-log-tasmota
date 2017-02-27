@@ -1,6 +1,6 @@
 # homebridge-mqtt-temperature-log-tasmota
 
-Plugin to HomeBridge optimized for work with Itead Sonoff and Electrodragon Relay Board hardware and firmware [Sonoff-Tasmota](https://github.com/arendst/Sonoff-Tasmota) via MQTT with log temperature (periodical and 24 h min. and max) to file. It acts as a themperature monitor for DS18B20, DHT22, DHT11, AM2301, AM2302 sensors.
+Plugin to HomeBridge optimized for work with Itead Sonoff and Electrodragon Relay Board hardware and firmware [Sonoff-Tasmota](https://github.com/arendst/Sonoff-Tasmota) via MQTT with log temperature (periodical and 24 h min. and max.) to file. It acts as a themperature monitor for DS18B20, DHT22, DHT11, AM2301, AM2302 sensors.
 
 Like this? Please buy me a beer (or coffee) ;-) <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=CK56Q7SFHEHSW"><img src="http://macwyznawca.pl/donate-paypal2.png" alt="Donate a coder" data-canonical-src="http://macwyznawca.pl/donate-paypal.svg" style="max-width:100%;"></a>
 
@@ -107,6 +107,7 @@ Sample HomeBridge Configuration (minimal)
 **"patchToSave":"/root/.homebridge/"** - path to save text files with temperature data.
 
 **"savePeriod": "15"** - period (minutes) for saving and check temperature. For save only min. and max. 24h temperature data set with "minus" ex "-15". Minimal preriod 15 minutes.
+
 **"zeroHour": "23"** - time at which you want to reset the timer min./max. Empty to reset after 24 hours since the last minimum or maximum.
 
-The files will be saved in the specified path with the "topic" (ex. Sonoff) in the file name.
+The files will be saved in the specified path with the "topic" (ex. Sonoff) in the file name ex. "/root/.homebridge/sonoff_temp.txt".
