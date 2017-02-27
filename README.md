@@ -84,8 +84,7 @@ Sample HomeBridge Configuration (minimal)
 			
 			"topic": "tele/sonoff/SENSOR",
 			
-			"patchToSave":"/root/.homebridge/",
-			"savePeriod": "15"
+			"patchToSave":"/root/.homebridge/"
 		}
 	]
 }
@@ -106,8 +105,8 @@ Sample HomeBridge Configuration (minimal)
 
 **"patchToSave":"/root/.homebridge/"** - path to save text files with temperature data.
 
-**"savePeriod": "15"** - period (minutes) for saving and check temperature. For save only min. and max. 24h temperature data set with "minus" ex "-15". Minimal preriod 15 minutes.
+**"savePeriod": "15"** - period (minutes) for saving and check temperature. For save only min. and max. 24h temperature data set with "minus" ex "-15". Minimal preriod 15 minutes. Empty: save every hour.
 
-**"zeroHour": "23"** - time at which you want to reset the timer min./max. Empty to reset after 24 hours since the last minimum or maximum.
+**"zeroHour": "23"** - time (UTC) at which you want to reset the timer min./max. Empty to reset after 24 hours since the last minimum or maximum.
 
 The files will be saved in the specified path with the "topic" (ex. Sonoff) in the file name ex. "/root/.homebridge/sonoff_temp.txt".
