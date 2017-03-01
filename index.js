@@ -47,8 +47,6 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	
 	this.sensorPropertyName = config["sensorPropertyName"] || "Sensor";
 	
-	this.savePeriod = 1; // for test porupse
-	
 	this.patchToSave = config["patchToSave"] || false;
 	if (this.patchToSave) {
 		try {
