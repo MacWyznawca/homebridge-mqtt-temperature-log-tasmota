@@ -22,9 +22,7 @@
 
 			"topic": "tele/sonoff/SENSOR",
 			
-			"patchToSave": "/root/.homebridge/",
-			"savePeriod": "15"
-
+			"patchToSave": "/root/.homebridge/"
 		}
 	]
 }
