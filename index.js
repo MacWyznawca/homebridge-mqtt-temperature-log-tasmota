@@ -23,6 +23,8 @@
 		"savePeriod": "15",
 		"zeroHour": "23",
 
+		"sensorPropertyName": "BME280_2",
+
 		"manufacturer": "ITEAD",
 		"model": "Sonoff TH",
 		"serialNumberMAC": "MAC OR SERIAL NUMBER"
@@ -75,6 +77,8 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	this.savePeriod = parseInt(config["savePeriod"]) || 60; // in minutes.
 	this.savePeriod = this.savePeriod < 10 ? 10 : this.savePeriod; // min. period 10 minutes
 	
+	this.sensorPropertyName = config["sensorPropertyName"] || "Sensor";
+	
 	//	this.savePeriod = 1; // for test porupse
 	
 	this.patchToSave = config["patchToSave"] || false;
@@ -100,7 +104,6 @@ function TemperatureLogTasmotaAccessory(log, config) {
 		this.activityParameter = "";
 	}
 
-
 	this.client_Id = "mqttjs_" + Math.random().toString(16).substr(2, 8);
 	this.options = {
 		keepalive: 10,
@@ -123,11 +126,6 @@ function TemperatureLogTasmotaAccessory(log, config) {
 
 	this.lastSaveData = new Date;
 
-	this.service = new Service.TemperatureSensor(this.name);
-	if (this.activityTopic !== "") {
-		this.service.addOptionalCharacteristic(Characteristic.StatusActive);
-	}
-
 	this.client = mqtt.connect(this.url, this.options);
 
 	this.client.on("error", function() {
@@ -142,9 +140,32 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	});
 
 	this.client.subscribe(this.topic);
+	
+	this.service = new Service.TemperatureSensor(this.name);
+	
 	if (this.activityTopic !== "") {
 		this.client.subscribe(this.activityTopic);
+		
+		this.service.addOptionalCharacteristic(Characteristic.StatusActive);
+		
+		this.service
+			.getCharacteristic(Characteristic.StatusActive)
+			.on("get", this.getStatusActive.bind(this));	
 	}
+		
+	this.service
+		.getCharacteristic(Characteristic.CurrentTemperature)
+		.on("get", this.getState.bind(this));
+	this.service
+		.getCharacteristic(Characteristic.CurrentTemperature)
+		.setProps({
+			minValue: -50
+		});
+	this.service
+		.getCharacteristic(Characteristic.CurrentTemperature)
+		.setProps({
+			maxValue: 125
+		});
 
 	var that = this;
 
@@ -166,6 +187,16 @@ function TemperatureLogTasmotaAccessory(log, config) {
 				that.temperature = parseFloat(data.AM2301.Temperature);
 			} else if (data.hasOwnProperty("DHT11")) {
 				that.temperature = parseFloat(data.DHT11.Temperature);
+			} else if (data.hasOwnProperty("HTU21")) {
+				that.temperature = parseFloat(data.HTU21.Temperature);
+			} else if (data.hasOwnProperty("BMP280")) {
+				that.temperature = parseFloat(data.BMP280.Temperature);
+			} else if (data.hasOwnProperty("BME280")) {
+				that.temperature = parseFloat(data.BME280.Temperature);
+			} else if (data.hasOwnProperty("BMP180")) {
+				that.temperature = parseFloat(data.BMP180.Temperature);
+			} else if (data.hasOwnProperty(that.sensorPropertyName)) {
+				that.temperature = parseFloat(data[that.sensorPropertyName].Temperature);
 			} else {return null}
 			that.service.setCharacteristic(Characteristic.CurrentTemperature, that.temperature);
 
@@ -175,7 +206,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 				if (((new Date).getTime() - that.lastSaveData.getTime()) >= (Math.abs(that.savePeriod) * 60000)) {
 					var zeroDate = that.zeroHour ? (new Date()).setHours(that.zeroHour, 0, 0, 0) : false;
 					// min temp
-					var minTmp = [Date(1968,4,29), "124.0"];
+					var minTmp = [Date(1968,4,29), "124.9"];
 					that.fs.readFile(that.patchToSave + that.filename + "_minTemp.txt", "utf8", function(err, data) {
 						if (err) {
 							minTmp = [new Date().toISOString(), that.temperature];
@@ -212,7 +243,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 						}
 					});
 					// max temp
-					var maxTmp = [Date(1968,4,29), "-49.0"];
+					var maxTmp = [Date(1968,4,29), "-49.9"];
 					that.fs.readFile(that.patchToSave + that.filename + "_maxTemp.txt", 'utf8', function(err, data) {
 						if (err) {
 							maxTmp = [new Date().toISOString(), that.temperature];
@@ -277,28 +308,6 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			that.service.setCharacteristic(Characteristic.StatusActive, that.activeStat);
 		}
 	});
-
-	this.service
-		.getCharacteristic(Characteristic.CurrentTemperature)
-		.on("get", this.getState.bind(this));
-
-	this.service
-		.getCharacteristic(Characteristic.CurrentTemperature)
-		.setProps({
-			minValue: -50
-		});
-
-	this.service
-		.getCharacteristic(Characteristic.CurrentTemperature)
-		.setProps({
-			maxValue: 125
-		});
-
-	if (this.activityTopic !== "") {
-		this.service
-			.getCharacteristic(Characteristic.StatusActive)
-			.on("get", this.getStatusActive.bind(this));
-	}
 }
 
 TemperatureLogTasmotaAccessory.prototype.getState = function(callback) {

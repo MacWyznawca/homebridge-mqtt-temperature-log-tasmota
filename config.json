@@ -31,6 +31,8 @@
 			"patchToSave":"/root/.homebridge/",
 			"savePeriod": "15",
 			"zeroHour": "23",
+			
+			"sensorPropertyName": "BME280_2",
 
 			"manufacturer": "ITEAD",
 			"model": "Sonoff TH",
