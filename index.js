@@ -1,38 +1,4 @@
-// Sonoff-Tasmota Temperature Sensor Accessory plugin for HomeBridge with log and min-max temp
-//
-// Remember to add accessory to config.json. Example:
-/* 	"accessories": [
-	{
-		"accessory": "mqtt-temperature-log-tasmota",
-
-		"name": "NAME OF THIS ACCESSORY",
-	
-		"url": "mqtt://MQTT-ADDRESS",
-		"username": "MQTT USER NAME",
-		"password": "MQTT PASSWORD",
-
-		"topic": "tele/sonoff/SENSOR",
-
-		"activityTopic": "tele/sonoff/LWT",
-		"activityParameter": "Online",
-
-		"startCmd": "cmnd/sonoff/TelePeriod",
-		"startParameter": "120",
-
-		"patchToSave":"/root/.homebridge/",
-		"savePeriod": "15",
-		"zeroHour": "23",
-
-		"sensorPropertyName": "BME280_2",
-
-		"manufacturer": "ITEAD",
-		"model": "Sonoff TH",
-		"serialNumberMAC": "MAC OR SERIAL NUMBER"
-
-	}]
-*/
-// When you attempt to add a device, it will ask for a "PIN code".
-// The default code for all HomeBridge accessories is 031-45-154.
+// Sonoff-Tasmota Temperature Sensor Accessory plugin for HomeBridge with log and min-max temp by @MacWyznawca Jaromir Kopp
 
 var Service, Characteristic;
 var mqtt = require("mqtt");
@@ -77,9 +43,11 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	this.savePeriod = parseInt(config["savePeriod"]) || 60; // in minutes.
 	this.savePeriod = this.savePeriod < 10 ? 10 : this.savePeriod; // min. period 10 minutes
 	
+//	this.savePeriod = 1; // FOR TEST ONLY!!!
+	
 	this.sensorPropertyName = config["sensorPropertyName"] || "Sensor";
 	
-	//	this.savePeriod = 1; // for test porupse
+	this.savePeriod = 1; // for test porupse
 	
 	this.patchToSave = config["patchToSave"] || false;
 	if (this.patchToSave) {
@@ -215,20 +183,22 @@ function TemperatureLogTasmotaAccessory(log, config) {
 							});
 						} else {
 							minTmp = data.split("\t");
+							that.log("minTmp po odczycie",minTmp);
 							if(minTmp.lenght < 2 || !((new Date(minTmp[0])).getTime()>0)){
 								minTmp = [new Date().toISOString(), that.temperature];
 								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) {
 									if (err) { that.patchToSave = false; that.log("Problem with save minTemp file");}
 								});
 							}
-							if (zeroDate ? new Date(minTmp[0]).getTime() - zeroDate < -86400000 : (new Date).getTime() - (new Date(minTmp[0])).getTime() > 86400000) {
-								minTmp[0] = new Date().toISOString();
-								minTmp[1] = that.temperature;
+							// how old is last record?
+							that.log("Nazwa: ",that.name, " Data zero: ",zeroDate, " Date(minTmp[0])).getTime(): ",(new Date(minTmp[0])).getTime());
+							that.log("Nazwa: ",that.name, " Data teraz: ",(new Date).getTime(), " (new Date(minTmp[0])).getTime(): ",(new Date(minTmp[0])).getTime());
+							if (zeroDate ? (new Date(minTmp[0])).getTime() - zeroDate < -86400000 : (new Date).getTime() - (new Date(minTmp[0])).getTime() > 86400000) {
+								minTmp[(new Date()).toISOString(),that.temperature];
 								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
 							} else {
 								if (that.temperature < minTmp[1]) {
-									minTmp[0] = new Date().toISOString();
-									minTmp[1] = that.temperature;
+									minTmp[(new Date()).toISOString(),that.temperature];
 									that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
 								}
 							}
@@ -238,26 +208,29 @@ function TemperatureLogTasmotaAccessory(log, config) {
 					var maxTmp = [Date(1968,4,29), "-49.9"];
 					that.fs.readFile(that.patchToSave + that.filename + "_maxTemp.txt", 'utf8', function(err, data) {
 						if (err) {
-							maxTmp = [new Date().toISOString(), that.temperature];
+							maxTmp = [(new Date()).toISOString(), that.temperature];
 							that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) {
 								if (err) { that.patchToSave = false; that.log("Problem with save maxTemp file"); }
 							});
 						} else {
 							maxTmp = data.split("\t");
+							that.log("maxTmp po odczycie",maxTmp);
 							if(maxTmp.lenght < 2 || !((new Date(maxTmp[0])).getTime()>0)){
-								maxTmp = [new Date().toISOString(), that.temperature];
+								maxTmp = [(new Date()).toISOString(), that.temperature];
 								that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) {
 									if (err) { that.patchToSave = false; that.log("Problem with save mmaxTemp file");}
 								});
 							}
-							if (zeroDate ? new Date(maxTmp[0]).getTime() - zeroDate < -86400000 : (new Date).getTime() - (new Date(maxTmp[0])).getTime() > 86400000) {
-								maxTmp[0] = new Date().toISOString();
-								maxTmp[1] = that.temperature;
-								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
+							// how old is last record?
+							that.log("Nazwa: ",that.name, " Data zero: ",zeroDate, " Date(maxTmp[0])).getTime(): ",(new Date(maxTmp[0])).getTime());
+							that.log("Nazwa: ",that.name, " Data teraz: ",(new Date).getTime(), " (new Date(maxTmp[0])).getTime(): ",(new Date(maxTmp[0])).getTime());
+							
+							if (zeroDate ? (new Date(maxTmp[0])).getTime() - zeroDate < -86400000 : (new Date).getTime() - (new Date(maxTmp[0])).getTime() > 86400000) {
+								maxTmp[(new Date()).toISOString(),that.temperature];
+								that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
 							} else {
 								if (that.temperature > maxTmp[1]) {
-									maxTmp[0] = new Date().toISOString();
-									maxTmp[1] = that.temperature;
+									maxTmp[(new Date()).toISOString(),that.temperature];
 									that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
 								}
 							}
