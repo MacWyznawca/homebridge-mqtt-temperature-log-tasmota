@@ -211,16 +211,12 @@ function TemperatureLogTasmotaAccessory(log, config) {
 						if (err) {
 							minTmp = [new Date().toISOString(), that.temperature];
 							that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) {
-								if (err) {
-									that.patchToSave = false;
-									that.log("Problem with save minTemp file");
-								}
+								if (err) { that.patchToSave = false; that.log("Problem with save minTemp file"); }
 							});
 						} else {
 							minTmp = data.split("\t");
 							if(minTmp.lenght < 2 || !((new Date(minTmp[0])).getTime()>0)){
 								minTmp = [new Date().toISOString(), that.temperature];
-								that.log("Nowe dane: ",minTmp);
 								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) {
 									if (err) { that.patchToSave = false; that.log("Problem with save minTemp file");}
 								});
@@ -228,16 +224,12 @@ function TemperatureLogTasmotaAccessory(log, config) {
 							if (zeroDate ? new Date(minTmp[0]).getTime() - zeroDate < -86400000 : (new Date).getTime() - (new Date(minTmp[0])).getTime() > 86400000) {
 								minTmp[0] = new Date().toISOString();
 								minTmp[1] = that.temperature;
-								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) {
-									if (err) throw err;
-								});
+								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
 							} else {
 								if (that.temperature < minTmp[1]) {
 									minTmp[0] = new Date().toISOString();
 									minTmp[1] = that.temperature;
-									that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) {
-										if (err) throw err;
-									});
+									that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
 								}
 							}
 						}
@@ -248,34 +240,25 @@ function TemperatureLogTasmotaAccessory(log, config) {
 						if (err) {
 							maxTmp = [new Date().toISOString(), that.temperature];
 							that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) {
-								if (err) {
-									that.patchToSave = false;
-									that.log("Problem with save maxTemp file");
-								}
+								if (err) { that.patchToSave = false; that.log("Problem with save maxTemp file"); }
 							});
 						} else {
 							maxTmp = data.split("\t");
 							if(maxTmp.lenght < 2 || !((new Date(maxTmp[0])).getTime()>0)){
 								maxTmp = [new Date().toISOString(), that.temperature];
-								that.log("Nowe dane: ",maxTmp);
 								that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) {
 									if (err) { that.patchToSave = false; that.log("Problem with save mmaxTemp file");}
 								});
 							}
-							
-							if ((new Date).getTime() - (new Date(maxTmp[0])).getTime() > 86400000) {
+							if (zeroDate ? new Date(maxTmp[0]).getTime() - zeroDate < -86400000 : (new Date).getTime() - (new Date(maxTmp[0])).getTime() > 86400000) {
 								maxTmp[0] = new Date().toISOString();
 								maxTmp[1] = that.temperature;
-								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) {
-									if (err) throw err;
-								});
+								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
 							} else {
 								if (that.temperature > maxTmp[1]) {
 									maxTmp[0] = new Date().toISOString();
 									maxTmp[1] = that.temperature;
-									that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) {
-										if (err) throw err;
-									});
+									that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
 								}
 							}
 						}
