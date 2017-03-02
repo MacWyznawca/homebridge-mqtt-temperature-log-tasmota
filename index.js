@@ -3,6 +3,8 @@
 var Service, Characteristic;
 var mqtt = require("mqtt");
 
+var schedule = require('node-schedule');
+
 module.exports = function(homebridge) {
 	Service = homebridge.hap.Service;
 	Characteristic = homebridge.hap.Characteristic;
@@ -42,11 +44,11 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	this.filename = this.topic.split("/")[1];
 	this.savePeriod = parseInt(config["savePeriod"]) || 60; // in minutes.
 	this.savePeriod = this.savePeriod < 10 ? 10 : this.savePeriod; // min. period 10 minutes
-	
-//	this.savePeriod = 1; // FOR TEST ONLY!!!
-	
+
+	//	this.savePeriod = 1; // FOR TEST ONLY!!!
+
 	this.sensorPropertyName = config["sensorPropertyName"] || "Sensor";
-	
+
 	this.patchToSave = config["patchToSave"] || false;
 	if (this.patchToSave) {
 		try {
@@ -98,7 +100,6 @@ function TemperatureLogTasmotaAccessory(log, config) {
 		that.log("Error event on MQTT");
 	});
 
-	// Eksperyment z wymuszaniem statusu
 	this.client.on("connect", function() {
 		if (config["startCmd"] !== undefined) {
 			that.client.publish(config["startCmd"], config["startParameter"] !== undefined ? config["startParameter"] : "");
@@ -106,19 +107,19 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	});
 
 	this.client.subscribe(this.topic);
-	
+
 	this.service = new Service.TemperatureSensor(this.name);
-	
+
 	if (this.activityTopic !== "") {
 		this.client.subscribe(this.activityTopic);
-		
+
 		this.service.addOptionalCharacteristic(Characteristic.StatusActive);
-		
+
 		this.service
 			.getCharacteristic(Characteristic.StatusActive)
-			.on("get", this.getStatusActive.bind(this));	
+			.on("get", this.getStatusActive.bind(this));
 	}
-		
+
 	this.service
 		.getCharacteristic(Characteristic.CurrentTemperature)
 		.on("get", this.getState.bind(this));
@@ -163,7 +164,9 @@ function TemperatureLogTasmotaAccessory(log, config) {
 				that.temperature = parseFloat(data.BMP180.Temperature);
 			} else if (data.hasOwnProperty(that.sensorPropertyName)) {
 				that.temperature = parseFloat(data[that.sensorPropertyName].Temperature);
-			} else {return null}
+			} else {
+				return null
+			}
 			that.service.setCharacteristic(Characteristic.CurrentTemperature, that.temperature);
 
 			// Write temperature to file	
@@ -172,70 +175,85 @@ function TemperatureLogTasmotaAccessory(log, config) {
 				if (((new Date).getTime() - that.lastSaveData.getTime()) >= (Math.abs(that.savePeriod) * 60000)) {
 					var zeroDate = that.zeroHour ? (new Date()).setHours(that.zeroHour, 0, 0, 0) : false;
 					// min temp
-					var minTmp = [Date(1968,4,29), "124.9"];
+					var minTmp = [Date(1968, 4, 29), 124.9];
 					that.fs.readFile(that.patchToSave + that.filename + "_minTemp.txt", "utf8", function(err, data) {
 						if (err) {
 							minTmp = [new Date().toISOString(), that.temperature];
 							that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) {
-								if (err) { that.patchToSave = false; that.log("Problem with save minTemp file"); }
+								if (err) {
+									that.patchToSave = false;
+									that.log("Problem with save minTemp file");
+								}
 							});
 						} else {
 							minTmp = data.split("\t");
-							that.log("minTmp po odczycie",minTmp);
-							if(minTmp.lenght < 2 || !((new Date(minTmp[0])).getTime()>0)){
+							that.log("minTmp po odczycie", minTmp);
+							if (minTmp.lenght < 2 || !((new Date(minTmp[0])).getTime() > 0)) {
 								minTmp = [new Date().toISOString(), that.temperature];
 								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) {
-									if (err) { that.patchToSave = false; that.log("Problem with save minTemp file");}
+									if (err) {
+										that.patchToSave = false;
+										that.log("Problem with save minTemp file");
+									}
 								});
 							}
 							// how old is last record?
-							that.log("Nazwa: ",that.name, " Data zero: ",zeroDate, " Date(minTmp[0])).getTime(): ",(new Date(minTmp[0])).getTime());
-							that.log("Nazwa: ",that.name, " Data teraz: ",(new Date).getTime(), " (new Date(minTmp[0])).getTime(): ",(new Date(minTmp[0])).getTime());
 							if (zeroDate ? (new Date(minTmp[0])).getTime() - zeroDate < -86400000 : (new Date).getTime() - (new Date(minTmp[0])).getTime() > 86400000) {
-								minTmp[(new Date()).toISOString(),that.temperature];
-								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
+								minTmp = [(new Date()).toISOString(), that.temperature];
+								that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) {
+									if (err) throw err;
+								});
 							} else {
-								if (that.temperature < minTmp[1]) {
-									minTmp[(new Date()).toISOString(),that.temperature];
-									that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
+								if (that.temperature < parseFloat(minTmp[1])) {
+									minTmp = [(new Date()).toISOString(), that.temperature];
+									that.fs.writeFile(that.patchToSave + that.filename + "_minTemp.txt", minTmp.join("\t"), "utf8", function(err) {
+										if (err) throw err;
+									});
 								}
 							}
 						}
 					});
 					// max temp
-					var maxTmp = [Date(1968,4,29), "-49.9"];
+					var maxTmp = [Date(1968, 4, 29), -49.9];
 					that.fs.readFile(that.patchToSave + that.filename + "_maxTemp.txt", 'utf8', function(err, data) {
 						if (err) {
 							maxTmp = [(new Date()).toISOString(), that.temperature];
 							that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) {
-								if (err) { that.patchToSave = false; that.log("Problem with save maxTemp file"); }
+								if (err) {
+									that.patchToSave = false;
+									that.log("Problem with save maxTemp file");
+								}
 							});
 						} else {
 							maxTmp = data.split("\t");
-							that.log("maxTmp po odczycie",maxTmp);
-							if(maxTmp.lenght < 2 || !((new Date(maxTmp[0])).getTime()>0)){
+							that.log("maxTmp po odczycie", maxTmp);
+							if (maxTmp.lenght < 2 || !((new Date(maxTmp[0])).getTime() > 0)) {
 								maxTmp = [(new Date()).toISOString(), that.temperature];
 								that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) {
-									if (err) { that.patchToSave = false; that.log("Problem with save mmaxTemp file");}
+									if (err) {
+										that.patchToSave = false;
+										that.log("Problem with save mmaxTemp file");
+									}
 								});
 							}
-							// how old is last record?
-							that.log("Nazwa: ",that.name, " Data zero: ",zeroDate, " Date(maxTmp[0])).getTime(): ",(new Date(maxTmp[0])).getTime());
-							that.log("Nazwa: ",that.name, " Data teraz: ",(new Date).getTime(), " (new Date(maxTmp[0])).getTime(): ",(new Date(maxTmp[0])).getTime());
-							
+							// how old is last record?	
 							if (zeroDate ? (new Date(maxTmp[0])).getTime() - zeroDate < -86400000 : (new Date).getTime() - (new Date(maxTmp[0])).getTime() > 86400000) {
-								maxTmp[(new Date()).toISOString(),that.temperature];
-								that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
+								maxTmp = [(new Date()).toISOString(), that.temperature];
+								that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) {
+									if (err) throw err;
+								});
 							} else {
-								if (that.temperature > maxTmp[1]) {
-									maxTmp[(new Date()).toISOString(),that.temperature];
-									that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) { if (err) throw err; });
+								if (that.temperature > parseFloat(maxTmp[1])) {
+									maxTmp = [(new Date()).toISOString(), that.temperature];
+									that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", maxTmp.join("\t"), "utf8", function(err) {
+										if (err) throw err;
+									});
 								}
 							}
 						}
 					});
 					if (that.savePeriod > 0) {
-						that.fs.stat(that.patchToSave + that.filename + "_temp.txt", function(err, stat) {
+/*						that.fs.stat(that.patchToSave + that.filename + "_temp.txt", function(err, stat) {
 							if (err) {
 								that.log("Problem with file size (temp history)");
 							} else {
@@ -246,7 +264,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 								}
 							}
 						});
-						that.fs.appendFile(that.patchToSave + that.filename + "_temp.txt", convertDateUTCDtoLocalStr(data.Time) + "\t" + that.temperature + "\t" + "\n", "utf8", function(err) {
+*/						that.fs.appendFile(that.patchToSave + that.filename + "_temp.txt", convertDateUTCDtoLocalStr(data.Time) + "\t" + that.temperature + "\n", "utf8", function(err) {
 							if (err) {
 								that.patchToSave = false;
 								that.log("Problem with save file (temp history)");
@@ -261,6 +279,13 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			that.activeStat = (status == that.activityParameter);
 			that.service.setCharacteristic(Characteristic.StatusActive, that.activeStat);
 		}
+	});
+
+	// Roll temp. files mothly
+	var j = schedule.scheduleJob("0 0 1 * *", function() {
+		that.fs.rename(that.patchToSave + that.filename + "_temp.txt", that.patchToSave + that.filename + "_temp_" + convertDateTofilename(data.Time) + ".txt", function(err) {
+			if (err) that.log('ERROR change filename: ' + err);
+		});
 	});
 }
 

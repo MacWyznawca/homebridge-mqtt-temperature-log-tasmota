@@ -1,0 +1,8 @@
+/* 0.9.0 20170302
+ * Rolling files temperatures every month using node-schedule. 
+ * Fixed bugs for recording the minimum and maximum daily temperatures.
+ * The first version, which I'm happy.
+ * 
+ * 0.0.1 20170227
+ * First npm public release 
+ */
