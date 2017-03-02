@@ -1,4 +1,9 @@
-/* 0.9.0 20170302
+/* 
+ * 0.9.1 20170302
+ * Min/max daily temp. save to file fixed… again. 
+ * However, JavaScript is stupid! I Prefer Swift;-)
+ *
+ * 0.9.0 20170302
  * Rolling files temperatures every month using node-schedule. 
  * Fixed bugs for recording the minimum and maximum daily temperatures.
  * The first version, which I'm happy.
