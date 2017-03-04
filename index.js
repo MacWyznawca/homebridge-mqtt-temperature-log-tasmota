@@ -29,7 +29,7 @@ function convertDateTofilename(date) {
 	return date;
 }
 
-function TemperatureLogTasmotaAccessory(log, config) {
+function TemperatureLogTasmotaAccessory(log, config) {	
 	this.fs = require("graceful-fs");
 
 	this.log = log;
@@ -41,13 +41,13 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	this.url = config["url"];
 	this.topic = config["topic"];
 
+	this.sensorPropertyName = config["sensorPropertyName"] || "Sensor";
+
 	this.filename = this.topic.split("/")[1];
 	this.savePeriod = parseInt(config["savePeriod"]) || 60; // in minutes.
 	this.savePeriod = this.savePeriod < 10 ? 10 : this.savePeriod; // min. period 10 minutes
 
-	//	this.savePeriod = 1; // FOR TEST ONLY!!!
-
-	this.sensorPropertyName = config["sensorPropertyName"] || "Sensor";
+/////		this.savePeriod = 1; // FOR TEST ONLY!!!
 
 	this.patchToSave = config["patchToSave"] || false;
 	if (this.patchToSave) {
@@ -62,6 +62,11 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			}
 		}
 	}
+	
+	// change old filename from .txt to .csv
+	this.fs.rename(this.patchToSave + this.filename + "_temp.txt", this.patchToSave + this.filename + "_temperature.csv", function(err) {
+		if (err) that.log('Nothing to change _hourly'); });
+	
 	this.zeroHour = config["zeroHour"] || false;
 
 	if (config["activityTopic"] !== undefined) {
@@ -96,6 +101,8 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	
 	this.maxTmp = [Date(1968, 4, 29), -49.9];
 	this.minTmp = [Date(1968, 4, 29), 124.9];
+	
+	this.dataMessage = {};
 
 	this.client = mqtt.connect(this.url, this.options);
 
@@ -142,31 +149,32 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	this.client.on("message", function(topic, message) {
 		if (topic == that.topic) {
 			that.temperature = -49.9;
-			data = JSON.parse(message);
-			if (data === null) {
+			that.dataMessage = JSON.parse(message);
+			
+			if (that.dataMessage === null) {
 				that.temperature = parseFloat(message);
-			} else if (data.hasOwnProperty("DS18B20")) {
-				that.temperature = parseFloat(data.DS18B20.Temperature);
-			} else if (data.hasOwnProperty("DS18x20")) {
-				that.temperature = parseFloat(data.DS18x20.Temperature);
-			} else if (data.hasOwnProperty("DHT")) {
-				that.temperature = parseFloat(data.DHT.Temperature);
-			} else if (data.hasOwnProperty("DHT22")) {
-				that.temperature = parseFloat(data.DHT22.Temperature);
-			} else if (data.hasOwnProperty("AM2301")) {
-				that.temperature = parseFloat(data.AM2301.Temperature);
-			} else if (data.hasOwnProperty("DHT11")) {
-				that.temperature = parseFloat(data.DHT11.Temperature);
-			} else if (data.hasOwnProperty("HTU21")) {
-				that.temperature = parseFloat(data.HTU21.Temperature);
-			} else if (data.hasOwnProperty("BMP280")) {
-				that.temperature = parseFloat(data.BMP280.Temperature);
-			} else if (data.hasOwnProperty("BME280")) {
-				that.temperature = parseFloat(data.BME280.Temperature);
-			} else if (data.hasOwnProperty("BMP180")) {
-				that.temperature = parseFloat(data.BMP180.Temperature);
-			} else if (data.hasOwnProperty(that.sensorPropertyName)) {
-				that.temperature = parseFloat(data[that.sensorPropertyName].Temperature);
+			} else if (that.dataMessage.hasOwnProperty("DS18B20")) {
+				that.temperature = parseFloat(that.dataMessage.DS18B20.Temperature);
+			} else if (that.dataMessage.hasOwnProperty("DS18x20")) {
+				that.temperature = parseFloat(that.dataMessage.DS18x20.Temperature);
+			} else if (that.dataMessage.hasOwnProperty("DHT")) {
+				that.temperature = parseFloat(that.dataMessage.DHT.Temperature);
+			} else if (that.dataMessage.hasOwnProperty("DHT22")) {
+				that.temperature = parseFloat(that.dataMessage.DHT22.Temperature);
+			} else if (that.dataMessage.hasOwnProperty("AM2301")) {
+				that.temperature = parseFloat(that.dataMessage.AM2301.Temperature);
+			} else if (that.dataMessage.hasOwnProperty("DHT11")) {
+				that.temperature = parseFloat(that.dataMessage.DHT11.Temperature);
+			} else if (that.dataMessage.hasOwnProperty("HTU21")) {
+				that.temperature = parseFloat(that.dataMessage.HTU21.Temperature);
+			} else if (that.dataMessage.hasOwnProperty("BMP280")) {
+				that.temperature = parseFloat(that.dataMessage.BMP280.Temperature);
+			} else if (that.dataMessage.hasOwnProperty("BME280")) {
+				that.temperature = parseFloat(that.dataMessage.BME280.Temperature);
+			} else if (that.dataMessage.hasOwnProperty("BMP180")) {
+				that.temperature = parseFloat(that.dataMessage.BMP180.Temperature);
+			} else if (that.dataMessage.hasOwnProperty(that.sensorPropertyName)) {
+				that.temperature = parseFloat(that.dataMessage[that.sensorPropertyName].Temperature);
 			} else {
 				return null
 			}
@@ -252,17 +260,6 @@ function TemperatureLogTasmotaAccessory(log, config) {
 						}
 					}
 				});
-				if (((new Date).getTime() - that.lastSaveData.getTime()) >= (Math.abs(that.savePeriod) * 60000)) {
-					if (that.savePeriod > 0) {
-						that.fs.appendFile(that.patchToSave + that.filename + "_temp.txt", convertDateUTCDtoLocalStr(data.Time) + "\t" + that.temperature + "\n", "utf8", function(err) {
-							if (err) {
-								that.patchToSave = false;
-								that.log("Problem with save file (temp history)");
-							}
-							that.lastSaveData = new Date;
-						});
-					}
-				}
 			}
 		} else if (topic == that.activityTopic) {
 			var status = message.toString();
@@ -271,9 +268,17 @@ function TemperatureLogTasmotaAccessory(log, config) {
 		}
 	});
 
+	// Save data periodically  and reset period data
+	if (this.savePeriod > 0) {
+		var j = schedule.scheduleJob("0 */" + this.savePeriod + " * * * *", function() {
+			that.fs.appendFile(that.patchToSave + that.filename + "_temperature.csv", convertDateUTCDtoLocalStr(that.dataMessage.Time) + "\t" + that.temperature + "\n", "utf8", function(err) {
+				if (err) { that.patchToSave = false; that.log("Problem with save file (temperature history)"); }
+			});
+		});
+	}
 	// Roll temp. files mothly
-	var j = schedule.scheduleJob("0 0 1 * *", function() {
-		that.fs.rename(that.patchToSave + that.filename + "_temp.txt", that.patchToSave + that.filename + "_temp_" + convertDateTofilename(data.Time) + ".txt", function(err) {
+	var i = schedule.scheduleJob("0 0 1 * *", function() {
+		that.fs.rename(that.patchToSave + that.filename + "_temp.txt", that.patchToSave + that.filename + "_temp_" + convertDateTofilename(that.dataMessage.Time) + ".txt", function(err) {
 			if (err) that.log('ERROR change filename: ' + err);
 		});
 	});

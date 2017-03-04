@@ -115,6 +115,6 @@ Sample HomeBridge Configuration (minimal)
 
 **"zeroHour": "23"** - time (UTC) at which you want to reset the timer min./max. Empty to reset after 24 hours since the last minimum or maximum.
 
-The files will be saved in the specified path with the "topic" (ex. Sonoff) in the file name ex. "/root/.homebridge/sonoff_temp.txt".
+The files will be saved in the specified path with the "topic" (ex. Sonoff) in the file name ex. "/root/.homebridge/sonoff_temp.csv".
 
 **"sensorPropertyName": "BME280-2"** - custom Property name for sensor (see accessory WWW console for tips:  {"Time":"2017-03-01T08:47:19", "**DHT22-2**":{"Temperature":4.6, "Humidity":71.7}})
