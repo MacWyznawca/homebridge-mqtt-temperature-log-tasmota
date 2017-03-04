@@ -1,4 +1,8 @@
 /* 
+ * 0.9.2 20170304
+ * Details of the minimum and maximum daily temperatures 
+ * will be checked as often as received.
+ *
  * 0.9.1 20170302
  * Min/max daily temp. save to file fixed… again. 
  * However, JavaScript is stupid! I Prefer Swift;-)
