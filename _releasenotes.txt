@@ -1,4 +1,8 @@
 /* 
+ * 0.9.5 20170310
+ * Better handling of time zones.
+ * Add time stamp characteristic.
+ *
  * 0.9.3 20170304
  * File format CSV (separated tabulation). 
  * Improved time in which data is stored.

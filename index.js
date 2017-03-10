@@ -2,6 +2,7 @@
 
 var Service, Characteristic;
 var mqtt = require("mqtt");
+var inherits = require('util').inherits;
 
 var schedule = require('node-schedule');
 
@@ -11,13 +12,9 @@ module.exports = function(homebridge) {
 	homebridge.registerAccessory("homebridge-mqtt-temperature-log-tasmota", "mqtt-temperature-log-tasmota", TemperatureLogTasmotaAccessory);
 }
 
-function convertDateUTCDtoLocalStr(date) {
-	date = new Date(date);
-	var localOffset = date.getTimezoneOffset() * 60000;
-	var localTime = date.getTime();
-	date = localTime - localOffset;
-	date = new Date(date).toISOString().replace(/T/, ' ').replace(/\..+/, '');
-	return date;
+function convertDateToStr(date) {
+	dateStr = new Date(date).toISOString().replace(/T/, ' ').replace(/\..+/, '');
+	return dateStr;
 }
 
 function convertDateTofilename(date) {
@@ -29,7 +26,7 @@ function convertDateTofilename(date) {
 	return date;
 }
 
-function TemperatureLogTasmotaAccessory(log, config) {	
+function TemperatureLogTasmotaAccessory(log, config) {
 	this.fs = require("graceful-fs");
 
 	this.log = log;
@@ -47,8 +44,8 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	this.savePeriod = parseInt(config["savePeriod"]) || 60; // in minutes.
 	this.savePeriod = this.savePeriod < 10 ? 10 : this.savePeriod; // min. period 10 minutes
 
-/////		this.savePeriod = 1; // FOR TEST ONLY!!!
-
+	/////		this.savePeriod = 1; // FOR TEST ONLY!!!
+	
 	this.patchToSave = config["patchToSave"] || false;
 	if (this.patchToSave) {
 		try {
@@ -62,11 +59,12 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			}
 		}
 	}
-	
+
 	// change old filename from .txt to .csv
 	this.fs.rename(this.patchToSave + this.filename + "_temp.txt", this.patchToSave + this.filename + "_temperature.csv", function(err) {
-		if (err) that.log('Nothing to change _hourly'); });
-	
+		if (err) that.log('Nothing to change _hourly');
+	});
+
 	this.zeroHour = config["zeroHour"] || false;
 
 	if (config["activityTopic"] !== undefined) {
@@ -98,10 +96,10 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	};
 
 	this.lastSaveData = new Date;
-	
+
 	this.maxTmp = [Date(1968, 4, 29), -49.9];
 	this.minTmp = [Date(1968, 4, 29), 124.9];
-	
+
 	this.dataMessage = {};
 
 	this.client = mqtt.connect(this.url, this.options);
@@ -144,13 +142,34 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			maxValue: 125
 		});
 
+	this.Timestamp = function() {
+		Characteristic.call(this, 'Timestamp', 'FF000001-0000-1000-8000-135D67EC4377');
+		this.setProps({
+			format: Characteristic.Formats.STRING,
+			perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+		});
+		this.value = this.getDefaultValue();
+	};
+	inherits(this.Timestamp, Characteristic);
+	this.service.addOptionalCharacteristic(this.Timestamp);
+
+	this.service
+		.getCharacteristic(this.Timestamp)
+		.on('get', this.getTimestamp.bind(this));
+
 	var that = this;
 
 	this.client.on("message", function(topic, message) {
 		if (topic == that.topic) {
 			that.temperature = -49.9;
-			that.dataMessage = JSON.parse(message);
-			
+			try {
+				that.dataMessage = JSON.parse(message);
+			} catch (e) {
+				that.log("JSON problem");
+			}
+			if (isNaN(Date.parse(that.dataMessage.Time))) {
+				that.dataMessage.Time = (new Date()).toISOString;
+			}
 			if (that.dataMessage === null) {
 				that.temperature = parseFloat(message);
 			} else if (that.dataMessage.hasOwnProperty("DS18B20")) {
@@ -179,7 +198,8 @@ function TemperatureLogTasmotaAccessory(log, config) {
 				return null
 			}
 			that.service.setCharacteristic(Characteristic.CurrentTemperature, that.temperature);
-
+			that.service.setCharacteristic(that.Timestamp, convertDateToStr(that.dataMessage.Time));
+			
 			// Write temperature to file	
 			if (that.patchToSave) {
 				var zeroDate = that.zeroHour ? (new Date()).setHours(that.zeroHour, 0, 0, 0) : false;
@@ -222,7 +242,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 					}
 				});
 				// max temp	
-												
+
 				that.fs.readFile(that.patchToSave + that.filename + "_maxTemp.txt", 'utf8', function(err, data) {
 					if (err) {
 						that.maxTmp = [(new Date()).toISOString(), that.temperature];
@@ -268,17 +288,20 @@ function TemperatureLogTasmotaAccessory(log, config) {
 		}
 	});
 
-	// Save data periodically  and reset period data
+	// Save data periodically
 	if (this.savePeriod > 0) {
 		var j = schedule.scheduleJob("0 */" + this.savePeriod + " * * * *", function() {
-			that.fs.appendFile(that.patchToSave + that.filename + "_temperature.csv", convertDateUTCDtoLocalStr(that.dataMessage.Time) + "\t" + that.temperature + "\n", "utf8", function(err) {
-				if (err) { that.patchToSave = false; that.log("Problem with save file (temperature history)"); }
+			that.fs.appendFile(that.patchToSave + that.filename + "_temperature.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.temperature + "\n", "utf8", function(err) {
+				if (err) {
+					that.patchToSave = false;
+					that.log("Problem with save file (temperature log)");
+				}
 			});
 		});
 	}
 	// Roll temp. files mothly
 	var i = schedule.scheduleJob("0 0 1 * *", function() {
-		that.fs.rename(that.patchToSave + that.filename + "_temp.txt", that.patchToSave + that.filename + "_temp_" + convertDateTofilename(that.dataMessage.Time) + ".txt", function(err) {
+		that.fs.rename(that.patchToSave + that.filename + "_temp.txt", that.patchToSave + that.filename + "_temp_" + convertDateTofilename(Date()) + ".txt", function(err) {
 			if (err) that.log('ERROR change filename: ' + err);
 		});
 	});
@@ -290,6 +313,10 @@ TemperatureLogTasmotaAccessory.prototype.getState = function(callback) {
 
 TemperatureLogTasmotaAccessory.prototype.getStatusActive = function(callback) {
 	callback(null, this.activeStat);
+}
+
+TemperatureLogTasmotaAccessory.prototype.getTimestamp = function(callback) {
+	callback(null, convertDateToStr(this.dataMessage.Time));
 }
 
 TemperatureLogTasmotaAccessory.prototype.getServices = function() {
