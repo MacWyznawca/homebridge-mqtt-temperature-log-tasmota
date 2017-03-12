@@ -12,7 +12,7 @@
 	
 	"accessories": [
 		{
-			"accessory": "mqtt-temperature-tasmota",
+			"accessory": "mqtt-temperature-log-tasmota",
 
 			"name": "NAME OF THIS ACCESSORY",
 	

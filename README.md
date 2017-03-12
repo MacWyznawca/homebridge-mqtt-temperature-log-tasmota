@@ -32,7 +32,7 @@ Sample HomeBridge Configuration (complete)
 	
 	"accessories": [
 		{
-			"accessory": "mqtt-temperature-tasmota",
+			"accessory": "mqtt-temperature-log-tasmota",
 			
 			"name": "NAME OF THIS ACCESSORY",
 	
@@ -80,7 +80,7 @@ Sample HomeBridge Configuration (minimal)
 	
 	"accessories": [
 		{
-			"accessory": "mqtt-temperature-tasmota",
+			"accessory": "mqtt-temperature-log-tasmota",
 			
 			"name": "NAME OF THIS ACCESSORY",
 	
