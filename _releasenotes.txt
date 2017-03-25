@@ -1,6 +1,9 @@
 /* 
+ * 0.9.7 20160325
+ * Fixed BME280 crash
+ * 
  * 0.9.6 20160312
- * Fixet config in readme and files.
+ * Fixed config in readme and files.
  * 
  * 0.9.5 20170310
  * Better handling of time zones.
