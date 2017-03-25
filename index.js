@@ -13,7 +13,9 @@ module.exports = function(homebridge) {
 }
 
 function convertDateToStr(date) {
-	dateStr = new Date(date).toISOString().replace(/T/, ' ').replace(/\..+/, '');
+	let dateNew = new Date(date);
+	if (dateNew > 0) dateStr = dateNew.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+	else dateStr = "";
 	return dateStr;
 }
 
