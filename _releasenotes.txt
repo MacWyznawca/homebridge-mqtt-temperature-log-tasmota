@@ -1,5 +1,8 @@
 /* 
- * 0.9.7 20160325
+ * 0.9.8 20160325
+ * Added Barometric Pressure Level characteristic for sensor with pressure.
+ * 
+ * 0.9.7 20160324
  * Fixed BME280 crash
  * 
  * 0.9.6 20160312

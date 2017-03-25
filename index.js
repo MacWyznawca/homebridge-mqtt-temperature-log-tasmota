@@ -47,7 +47,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	this.savePeriod = this.savePeriod < 10 ? 10 : this.savePeriod; // min. period 10 minutes
 
 	/////		this.savePeriod = 1; // FOR TEST ONLY!!!
-	
+
 	this.patchToSave = config["patchToSave"] || false;
 	if (this.patchToSave) {
 		try {
@@ -145,7 +145,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 		});
 
 	this.Timestamp = function() {
-		Characteristic.call(this, 'Timestamp', 'FF000001-0000-1000-8000-135D67EC4377');
+		Characteristic.call(this, 'Time', 'FF000001-0000-1000-8000-135D67EC4377');
 		this.setProps({
 			format: Characteristic.Formats.STRING,
 			perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
@@ -158,6 +158,29 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	this.service
 		.getCharacteristic(this.Timestamp)
 		.on('get', this.getTimestamp.bind(this));
+
+// Presure
+		this.AtmosphericPressureLevel = function() {
+			Characteristic.call(this, 'Barometric Pressure', '28FDA6BC-9C2A-4DEA-AAFD-B49DB6D155AB');
+	    this.setProps({
+	      format:   Characteristic.Formats.UINT8,
+	      unit:     "mbar",
+	      minValue: 800,
+	      maxValue: 1200,
+	      minStep:  1,
+	      perms:    [
+	        Characteristic.Perms.READ,
+	        Characteristic.Perms.NOTIFY
+	      ]
+	    });
+	    this.value = this.getDefaultValue();
+  	};
+		inherits(this.AtmosphericPressureLevel, Characteristic);
+		this.service.addOptionalCharacteristic(this.AtmosphericPressureLevel);
+
+		this.service
+			.getCharacteristic(this.AtmosphericPressureLevel)
+			.on('get', this.getAtmosphericPressureLevel.bind(this));
 
 	var that = this;
 
@@ -190,19 +213,23 @@ function TemperatureLogTasmotaAccessory(log, config) {
 				that.temperature = parseFloat(that.dataMessage.HTU21.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("BMP280")) {
 				that.temperature = parseFloat(that.dataMessage.BMP280.Temperature);
+				that.pressure = parseInt(that.dataMessage.BMP280.Pressure);
 			} else if (that.dataMessage.hasOwnProperty("BME280")) {
 				that.temperature = parseFloat(that.dataMessage.BME280.Temperature);
+				that.pressure = parseInt(that.dataMessage.BME280.Pressure);
 			} else if (that.dataMessage.hasOwnProperty("BMP180")) {
 				that.temperature = parseFloat(that.dataMessage.BMP180.Temperature);
+				that.pressure = parseInt(that.dataMessage.BMP180.Pressure);
 			} else if (that.dataMessage.hasOwnProperty(that.sensorPropertyName)) {
 				that.temperature = parseFloat(that.dataMessage[that.sensorPropertyName].Temperature);
 			} else {
 				return null
 			}
 			that.service.setCharacteristic(Characteristic.CurrentTemperature, that.temperature);
+			that.service.setCharacteristic(that.AtmosphericPressureLevel, that.pressure);
 			that.service.setCharacteristic(that.Timestamp, convertDateToStr(that.dataMessage.Time));
-			
-			// Write temperature to file	
+
+			// Write temperature to file
 			if (that.patchToSave) {
 				var zeroDate = that.zeroHour ? (new Date()).setHours(that.zeroHour, 0, 0, 0) : false;
 				// min temp
@@ -243,7 +270,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 						}
 					}
 				});
-				// max temp	
+				// max temp
 
 				that.fs.readFile(that.patchToSave + that.filename + "_maxTemp.txt", 'utf8', function(err, data) {
 					if (err) {
@@ -266,7 +293,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 								}
 							});
 						}
-						// how old is last record?	
+						// how old is last record?
 						if (zeroDate ? (new Date(that.maxTmp[0])).getTime() - zeroDate < -86400000 : (new Date).getTime() - (new Date(that.maxTmp[0])).getTime() > 86400000) {
 							that.maxTmp = [(new Date()).toISOString(), that.temperature];
 							that.fs.writeFile(that.patchToSave + that.filename + "_maxTemp.txt", that.maxTmp.join("\t"), "utf8", function(err) {
@@ -319,6 +346,10 @@ TemperatureLogTasmotaAccessory.prototype.getStatusActive = function(callback) {
 
 TemperatureLogTasmotaAccessory.prototype.getTimestamp = function(callback) {
 	callback(null, convertDateToStr(this.dataMessage.Time));
+}
+
+TemperatureLogTasmotaAccessory.prototype.getAtmosphericPressureLevel = function(callback) {
+	callback(null, this.pressure);
 }
 
 TemperatureLogTasmotaAccessory.prototype.getServices = function() {
