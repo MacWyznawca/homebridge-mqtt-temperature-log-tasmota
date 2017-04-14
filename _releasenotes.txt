@@ -1,4 +1,7 @@
 /* 
+ * 0.9.9 20170414
+ * Better JSON parse
+ *
  * 0.9.8 20160325
  * Added Barometric Pressure Level characteristic for sensor with pressure.
  * 

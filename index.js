@@ -199,8 +199,6 @@ function TemperatureLogTasmotaAccessory(log, config) {
 				that.temperature = parseFloat(message);
 			} else if (that.dataMessage.hasOwnProperty("DS18B20")) {
 				that.temperature = parseFloat(that.dataMessage.DS18B20.Temperature);
-			} else if (that.dataMessage.hasOwnProperty("DS18x20")) {
-				that.temperature = parseFloat(that.dataMessage.DS18x20.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("DHT")) {
 				that.temperature = parseFloat(that.dataMessage.DHT.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("DHT22")) {
@@ -213,13 +211,13 @@ function TemperatureLogTasmotaAccessory(log, config) {
 				that.temperature = parseFloat(that.dataMessage.HTU21.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("BMP280")) {
 				that.temperature = parseFloat(that.dataMessage.BMP280.Temperature);
-				that.pressure = parseInt(that.dataMessage.BMP280.Pressure);
+				that.pressure = parseFloat(that.dataMessage.BMP280.Pressure);
 			} else if (that.dataMessage.hasOwnProperty("BME280")) {
 				that.temperature = parseFloat(that.dataMessage.BME280.Temperature);
-				that.pressure = parseInt(that.dataMessage.BME280.Pressure);
+				that.pressure = parseFloat(that.dataMessage.BME280.Pressure);
 			} else if (that.dataMessage.hasOwnProperty("BMP180")) {
 				that.temperature = parseFloat(that.dataMessage.BMP180.Temperature);
-				that.pressure = parseInt(that.dataMessage.BMP180.Pressure);
+				that.pressure = parseFloat(that.dataMessage.BMP180.Pressure);
 			} else if (that.dataMessage.hasOwnProperty(that.sensorPropertyName)) {
 				that.temperature = parseFloat(that.dataMessage[that.sensorPropertyName].Temperature);
 			} else {
@@ -326,11 +324,22 @@ function TemperatureLogTasmotaAccessory(log, config) {
 					that.log("Problem with save file (temperature log)");
 				}
 			});
+			if(that.pressure > 800){
+				that.fs.appendFile(that.patchToSave + that.filename + "_pressure.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.pressure + "\n", "utf8", function(err) {
+					if (err) {
+						that.patchToSave = false;
+						that.log("Problem with save file (_pressure log)");
+					}
+				});
+			}
 		});
 	}
 	// Roll temp. files mothly
 	var i = schedule.scheduleJob("0 0 1 * *", function() {
-		that.fs.rename(that.patchToSave + that.filename + "_temp.txt", that.patchToSave + that.filename + "_temp_" + convertDateTofilename(Date()) + ".txt", function(err) {
+		that.fs.rename(that.patchToSave + that.filename + "_temperature.csv", that.patchToSave + that.filename + "_temperature_" + convertDateTofilename(Date()) + ".csv", function(err) {
+			if (err) that.log('ERROR change filename: ' + err);
+		});
+		that.fs.rename(that.patchToSave + that.filename + "_pressure.csv", that.patchToSave + that.filename + "_pressure_" + convertDateTofilename(Date()) + ".csv", function(err) {
 			if (err) that.log('ERROR change filename: ' + err);
 		});
 	});
