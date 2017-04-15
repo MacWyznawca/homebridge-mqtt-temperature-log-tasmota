@@ -195,9 +195,12 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			if (isNaN(Date.parse(that.dataMessage.Time))) {
 				that.dataMessage.Time = (new Date()).toISOString;
 			}
+			
 			if (that.dataMessage === null) {
 				that.temperature = parseFloat(message);
-			} else if (that.dataMessage.hasOwnProperty("DS18B20")) {
+			} else if (that.dataMessage.hasOwnProperty(that.sensorPropertyName)) {
+ 				that.temperature = parseFloat(that.dataMessage[that.sensorPropertyName].Temperature);
+ 			} else if (that.dataMessage.hasOwnProperty("DS18B20")) {
 				that.temperature = parseFloat(that.dataMessage.DS18B20.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("DHT")) {
 				that.temperature = parseFloat(that.dataMessage.DHT.Temperature);
@@ -218,9 +221,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			} else if (that.dataMessage.hasOwnProperty("BMP180")) {
 				that.temperature = parseFloat(that.dataMessage.BMP180.Temperature);
 				that.pressure = parseFloat(that.dataMessage.BMP180.Pressure);
-			} else if (that.dataMessage.hasOwnProperty(that.sensorPropertyName)) {
-				that.temperature = parseFloat(that.dataMessage[that.sensorPropertyName].Temperature);
-			} else {
+			} else  {
 				return null
 			}
 			that.service.setCharacteristic(Characteristic.CurrentTemperature, that.temperature);
