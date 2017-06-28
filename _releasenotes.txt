@@ -1,4 +1,7 @@
 /* 
+ * 1.0.1 20170628
+ * Addet "use strict", problem with bad data from BMP sensor solved.
+ * 
  * 1.0.0 20170415
  * Sensor property name should have higher priority than others.
  * 
