@@ -10,7 +10,7 @@ var schedule = require('node-schedule');
 module.exports = function(homebridge) {
 	Service = homebridge.hap.Service;
 	Characteristic = homebridge.hap.Characteristic;
-	homebridge.registerAccessory("homebridge-mqtt-temperature-log-tasmota", "mqtt-temperature-log-tasmota", TemperatureLogTasmotaAccessory);
+	homebridge.registerAccessory("homebridge-mqtt-temperature-and-humidity-log-tasmota", "mqtt-temperature-and-humidity-log-tasmota", TemperatureAndHumidityLogTasmotaAccessory);
 }
 
 function convertDateToStr(date) {
@@ -29,7 +29,7 @@ function convertDateTofilename(date) {
 	return date;
 }
 
-function TemperatureLogTasmotaAccessory(log, config) {
+function TemperatureAndHumidityLogTasmotaAccessory(log, config) {
 	this.fs = require("graceful-fs");
 
 	this.log = log;
@@ -48,7 +48,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	this.savePeriod = this.savePeriod < 2 ? 2 : this.savePeriod; // min. period 10 minutes
 
 	/////		this.savePeriod = 1; // FOR TEST ONLY!!!
-    this.writeMinAndMax = config["writeMinAndMax"] || "true";
+    this.writeMinAndMax = config["writeMinAndMax"];
 
 	this.pathToSave = config["pathToSave"] || config["patchToSave"] || false;
 	if (this.pathToSave) {
@@ -186,7 +186,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 
     // Humidity
     this.CurrentRelativeHumidity = function() {
-        Characteristic.call(this, 'Relative Humidity', '28FDA6BC-9C2A-4DEA-AAFD-B49DB6D155AC');
+        Characteristic.call(this, 'Relative Humidity', '00000010-0000-1000-8000-0026BB765291');
         this.setProps({
             format:   Characteristic.Formats.UINT8,
             unit:     "%",
@@ -226,7 +226,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			} else if (that.dataMessage.hasOwnProperty(that.sensorPropertyName)) {
  				that.temperature = parseFloat(that.dataMessage[that.sensorPropertyName].Temperature);
  				that.humidity = parseFloat(that.dataMessage[that.sensorPropertyName].Humidity);
- 			} else if (that.dataMessage.hasOwnProperty("DS18B20")) {
+            } else if (that.dataMessage.hasOwnProperty("DS18B20")) {
 				that.temperature = parseFloat(that.dataMessage.DS18B20.Temperature);
                 that.humidity = parseFloat(that.dataMessage.DS18B20.Humidity);
 			} else if (that.dataMessage.hasOwnProperty("DHT")) {
@@ -364,7 +364,9 @@ function TemperatureLogTasmotaAccessory(log, config) {
 
 	// Save data periodically
 	if (this.savePeriod > 0) {
+		that.log("Saving data every " + this.savePeriod + " minutes to " + that.pathToSave);
 		var j = schedule.scheduleJob("0 */" + this.savePeriod + " * * * *", function() {
+			that.log("Saving data to " + that.pathToSave + "(temp=" + that.temperature + ", pressure=" + that.pressure + ", humidity=" + that.humidity + ")");
 			that.fs.appendFile(that.pathToSave + that.filename + "_temperature.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.temperature + "\n", "utf8", function(err) {
 				if (err) {
 					that.pathToSave = false;
@@ -403,27 +405,27 @@ function TemperatureLogTasmotaAccessory(log, config) {
 	});
 }
 
-TemperatureLogTasmotaAccessory.prototype.getState = function(callback) {
+TemperatureAndHumidityLogTasmotaAccessory.prototype.getState = function(callback) {
 	callback(null, this.temperature);
 }
 
-TemperatureLogTasmotaAccessory.prototype.getStatusActive = function(callback) {
+TemperatureAndHumidityLogTasmotaAccessory.prototype.getStatusActive = function(callback) {
 	callback(null, this.activeStat);
 }
 
-TemperatureLogTasmotaAccessory.prototype.getTimestamp = function(callback) {
+TemperatureAndHumidityLogTasmotaAccessory.prototype.getTimestamp = function(callback) {
 	callback(null, convertDateToStr(this.dataMessage.Time));
 }
 
-TemperatureLogTasmotaAccessory.prototype.getAtmosphericPressureLevel = function(callback) {
+TemperatureAndHumidityLogTasmotaAccessory.prototype.getAtmosphericPressureLevel = function(callback) {
 	callback(null, this.pressure);
 }
 
-TemperatureLogTasmotaAccessory.prototype.getCurrentRelativeHumidity = function(callback) {
+TemperatureAndHumidityLogTasmotaAccessory.prototype.getCurrentRelativeHumidity = function(callback) {
 	callback(null, this.humidity);
 }
 
-TemperatureLogTasmotaAccessory.prototype.getServices = function() {
+TemperatureAndHumidityLogTasmotaAccessory.prototype.getServices = function() {
 
 	var informationService = new Service.AccessoryInformation();
 
