@@ -160,7 +160,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 		.getCharacteristic(this.Timestamp)
 		.on('get', this.getTimestamp.bind(this));
 
-// Presure
+	// Pressure
 		this.AtmosphericPressureLevel = function() {
 			Characteristic.call(this, 'Barometric Pressure', '28FDA6BC-9C2A-4DEA-AAFD-B49DB6D155AB');
 	    this.setProps({
@@ -183,6 +183,29 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			.getCharacteristic(this.AtmosphericPressureLevel)
 			.on('get', this.getAtmosphericPressureLevel.bind(this));
 
+    // Humidity
+    this.CurrentRelativeHumidity = function() {
+        Characteristic.call(this, 'Relative Humidity', '28FDA6BC-9C2A-4DEA-AAFD-B49DB6D155AC');
+        this.setProps({
+            format:   Characteristic.Formats.UINT8,
+            unit:     "%",
+            minValue: 0,
+            maxValue: 100,
+            minStep:  1,
+            perms:    [
+                Characteristic.Perms.READ,
+                Characteristic.Perms.NOTIFY
+            ]
+        });
+        this.value = this.getDefaultValue();
+    };
+    inherits(this.CurrentRelativeHumidity, Characteristic);
+    this.service.addOptionalCharacteristic(this.CurrentRelativeHumidity);
+
+    this.service
+        .getCharacteristic(this.CurrentRelativeHumidity)
+        .on('get', this.getCurrentRelativeHumidity.bind(this));
+
 	var that = this;
 
 	this.client.on("message", function(topic, message) {
@@ -201,34 +224,49 @@ function TemperatureLogTasmotaAccessory(log, config) {
 				that.temperature = parseFloat(message);
 			} else if (that.dataMessage.hasOwnProperty(that.sensorPropertyName)) {
  				that.temperature = parseFloat(that.dataMessage[that.sensorPropertyName].Temperature);
+ 				that.humidity = parseFloat(that.dataMessage[that.sensorPropertyName].Humidity);
  			} else if (that.dataMessage.hasOwnProperty("DS18B20")) {
 				that.temperature = parseFloat(that.dataMessage.DS18B20.Temperature);
+                that.humidity = parseFloat(that.dataMessage.DS18B20.Humidity);
 			} else if (that.dataMessage.hasOwnProperty("DHT")) {
+                that.humidity = parseFloat(that.dataMessage.DHT.Humidity);
 				that.temperature = parseFloat(that.dataMessage.DHT.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("DHT22")) {
+                that.humidity = parseFloat(that.dataMessage.DHT22.Humidity);
 				that.temperature = parseFloat(that.dataMessage.DHT22.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("AM2301")) {
+                that.humidity = parseFloat(that.dataMessage.AM2301.Humidity);
 				that.temperature = parseFloat(that.dataMessage.AM2301.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("DHT11")) {
+                that.humidity = parseFloat(that.dataMessage.DHT11.Humidity);
 				that.temperature = parseFloat(that.dataMessage.DHT11.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("HTU21")) {
+                that.humidity = parseFloat(that.dataMessage.HTU21.Humidity);
 				that.temperature = parseFloat(that.dataMessage.HTU21.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("BMP280")) {
 				that.temperature = parseFloat(that.dataMessage.BMP280.Temperature);
+                that.humidity = parseFloat(that.dataMessage.BMP280.Humidity);
 				that.pressure = parseFloat(that.dataMessage.BMP280.Pressure);
 			} else if (that.dataMessage.hasOwnProperty("BME280")) {
 				that.temperature = parseFloat(that.dataMessage.BME280.Temperature);
+                that.humidity = parseFloat(that.dataMessage.BME280.Humidity);
 				that.pressure = parseFloat(that.dataMessage.BME280.Pressure);
 			} else if (that.dataMessage.hasOwnProperty("BMP180")) {
 				that.temperature = parseFloat(that.dataMessage.BMP180.Temperature);
+                that.humidity = parseFloat(that.dataMessage.BMP180.Humidity);
 				that.pressure = parseFloat(that.dataMessage.BMP180.Pressure);
-			} else  {
+			} else if (that.dataMessage.hasOwnProperty("SI7021")) {
+                that.temperature = parseFloat(that.dataMessage.SI7021.Temperature);
+                that.humidity = parseFloat(that.dataMessage.SI7021.Humidity);
+            }
+            else  {
 				return null
 			}
 			if (that.temperature > -50){
 				that.service.setCharacteristic(Characteristic.CurrentTemperature, that.temperature);
 				that.service.setCharacteristic(that.AtmosphericPressureLevel, that.pressure);
 				that.service.setCharacteristic(that.Timestamp, convertDateToStr(that.dataMessage.Time));
+                that.service.setCharacteristic(Characteristic.CurrentRelativeHumidity, that.humidity);
 			}
 			
 			// Write temperature to file
@@ -338,6 +376,14 @@ function TemperatureLogTasmotaAccessory(log, config) {
 					}
 				});
 			}
+            if(that.humidity > 10){
+                that.fs.appendFile(that.patchToSave + that.filename + "_humidity.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.humidity + "\n", "utf8", function(err) {
+                    if (err) {
+                        that.patchToSave = false;
+                        that.log("Problem with save file (_humidity log)");
+                    }
+                });
+            }
 		});
 	}
 	// Roll temp. files mothly
@@ -348,6 +394,9 @@ function TemperatureLogTasmotaAccessory(log, config) {
 		that.fs.rename(that.patchToSave + that.filename + "_pressure.csv", that.patchToSave + that.filename + "_pressure_" + convertDateTofilename(Date()) + ".csv", function(err) {
 			if (err) that.log('ERROR change filename: ' + err);
 		});
+        that.fs.rename(that.patchToSave + that.filename + "_humidity.csv", that.patchToSave + that.filename + "_humidity_" + convertDateTofilename(Date()) + ".csv", function(err) {
+            if (err) that.log('ERROR change filename: ' + err);
+        });
 	});
 }
 
@@ -365,6 +414,10 @@ TemperatureLogTasmotaAccessory.prototype.getTimestamp = function(callback) {
 
 TemperatureLogTasmotaAccessory.prototype.getAtmosphericPressureLevel = function(callback) {
 	callback(null, this.pressure);
+}
+
+TemperatureLogTasmotaAccessory.prototype.getCurrentRelativeHumidity = function(callback) {
+	callback(null, this.humidity);
 }
 
 TemperatureLogTasmotaAccessory.prototype.getServices = function() {

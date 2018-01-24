@@ -1,4 +1,8 @@
-/* 
+/*
+ * 1.1.0 20180124
+ * Added humidity to log
+ * Added SI7021 sensor
+ *
  * 1.0.1 20170628
  * Addet "use strict", problem with bad data from BMP sensor solved.
  * 
