@@ -10,7 +10,7 @@ var schedule = require('node-schedule');
 module.exports = function(homebridge) {
 	Service = homebridge.hap.Service;
 	Characteristic = homebridge.hap.Characteristic;
-	homebridge.registerAccessory("homebridge-mqtt-temperature-and-humidity-log-tasmota", "mqtt-temperature-and-humidity-log-tasmota", TemperatureAndHumidityLogTasmotaAccessory);
+	homebridge.registerAccessory("homebridge-mqtt-temperature-log-tasmota", "mqtt-temperature-log-tasmota", TemperatureLogTasmotaAccessory);
 }
 
 function convertDateToStr(date) {
@@ -29,7 +29,7 @@ function convertDateTofilename(date) {
 	return date;
 }
 
-function TemperatureAndHumidityLogTasmotaAccessory(log, config) {
+function TemperatureLogTasmotaAccessory(log, config) {
 	this.fs = require("graceful-fs");
 
 	this.log = log;
@@ -429,27 +429,27 @@ function TemperatureAndHumidityLogTasmotaAccessory(log, config) {
 	});
 }
 
-TemperatureAndHumidityLogTasmotaAccessory.prototype.getState = function(callback) {
+TemperatureLogTasmotaAccessory.prototype.getState = function(callback) {
 	callback(null, this.temperature);
 }
 
-TemperatureAndHumidityLogTasmotaAccessory.prototype.getStatusActive = function(callback) {
+TemperatureLogTasmotaAccessory.prototype.getStatusActive = function(callback) {
 	callback(null, this.activeStat);
 }
 
-TemperatureAndHumidityLogTasmotaAccessory.prototype.getTimestamp = function(callback) {
+TemperatureLogTasmotaAccessory.prototype.getTimestamp = function(callback) {
 	callback(null, convertDateToStr(this.dataMessage.Time));
 }
 
-TemperatureAndHumidityLogTasmotaAccessory.prototype.getAtmosphericPressureLevel = function(callback) {
+TemperatureLogTasmotaAccessory.prototype.getAtmosphericPressureLevel = function(callback) {
 	callback(null, this.pressure);
 }
 
-TemperatureAndHumidityLogTasmotaAccessory.prototype.getCurrentRelativeHumidity = function(callback) {
+TemperatureLogTasmotaAccessory.prototype.getCurrentRelativeHumidity = function(callback) {
 	callback(null, this.humidity);
 }
 
-TemperatureAndHumidityLogTasmotaAccessory.prototype.getServices = function() {
+TemperatureLogTasmotaAccessory.prototype.getServices = function() {
 
 	var informationService = new Service.AccessoryInformation();
 

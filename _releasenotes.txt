@@ -1,16 +1,11 @@
 /*
- * 1.2.0 20180125
+ * 1.1.0 20180125
+ * Added humidity to log
+ * Added SI7021 sensor
  * Added 'singleFile' option to combine temperature, pressure and humidity into one file
- *
- * 1.1.1 20180124
- * Fix for humidity log
  * Added 'pathToSave' option (for typo in 'patchToSave')
  * Added 'writeMinAndMax' option (default=true) to disable min and max
  * Set minimum 'savePeriod' to 2 (from 10)
- *
- * 1.1.0 20180124
- * Added humidity to log
- * Added SI7021 sensor
  *
  * 1.0.1 20170628
  * Addet "use strict", problem with bad data from BMP sensor solved.

@@ -1,6 +1,6 @@
 {
-  "name": "homebridge-mqtt-temperature-and-humidity-log-tasmota",
-  "version": "1.2.1",
+  "name": "homebridge-mqtt-temperature-log-tasmota",
+  "version": "1.1.0",
   "description": "Plugin to HomeBridge optimized for work with Itead Sonoff and Electrodragon Relay Board hardware with firmware Sonoff-Tasmota via MQTT with log to file. Also works with other accessories sending the temperature as a number (payload ex. 21.1)",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JannikArndt/homebridge-mqtt-temperature-log-tasmota.git"
+    "url": "git+https://github.com/MacWyznawca/homebridge-mqtt-temperature-log-tasmota.git"
   },
   "dependencies": {
     "mqtt": ">=1.12.0",
@@ -38,15 +38,17 @@
     "BMP180",
     "BME280",
     "BPM280",
+    "SI7021",
     "temperature",
     "Pressure",
+    "humidity",
     "log",
     "history"
   ],
-  "author": "Jannik Arndt, forked from Jaromir Kopp",
+  "author": "Jaromir Kopp",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/JannikArndt/homebridge-mqtt-temperature-log-tasmota/issues"
+    "url": "https://github.com/MacWyznawca/homebridge-mqtt-temperature-log-tasmota/issues"
   },
-  "homepage": "https://github.com/JannikArndt/homebridge-mqtt-temperature-log-tasmota#readme"
+  "homepage": "https://github.com/MacWyznawca/homebridge-mqtt-temperature-log-tasmota#readme"
 }
