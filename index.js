@@ -367,14 +367,17 @@ function TemperatureAndHumidityLogTasmotaAccessory(log, config) {
 	if (this.savePeriod > 0) {
 		that.log("Saving data every " + this.savePeriod + " minutes to " + that.pathToSave);
 		var j = schedule.scheduleJob("0 */" + this.savePeriod + " * * * *", function() {
-			that.log("Saving data to " + that.pathToSave + "(temp=" + that.temperature + ", pressure=" + that.pressure + ", humidity=" + that.humidity + ")");
 
-			if (this.singleFile) {
+			if (that.singleFile) {
+				let filepath = that.pathToSave + that.filename + "_log.csv";
+                that.log("Saving data to " + filepath + " (temp=" + that.temperature + ", pressure=" + that.pressure + ", humidity=" + that.humidity + ")");
+
                 let text = convertDateToStr(that.dataMessage.Time) + "\t" + that.temperature;
                 if (that.pressure > 800) { text = text + "\t" + that.pressure }
 				if (that.humidity > 0) { text = text + "\t" + that.humidity }
 				text = text + "\n";
-                that.fs.appendFile(that.pathToSave + that.filename + "_log.csv", text, "utf8", function (err) {
+
+                that.fs.appendFile(filepath, text, "utf8", function (err) {
                     if (err) {
                         that.pathToSave = false;
                         that.log("Problem with save file (temperature log)");
@@ -382,6 +385,8 @@ function TemperatureAndHumidityLogTasmotaAccessory(log, config) {
                 });
 			}
 			else {
+                that.log("Saving data to " + that.pathToSave + that.filename + "_*.csv (temp=" + that.temperature + ", pressure=" + that.pressure + ", humidity=" + that.humidity + ")");
+
                 that.fs.appendFile(that.pathToSave + that.filename + "_temperature.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.temperature + "\n", "utf8", function (err) {
                     if (err) {
                         that.pathToSave = false;
