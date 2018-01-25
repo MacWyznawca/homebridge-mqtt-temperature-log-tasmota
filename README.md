@@ -48,9 +48,11 @@ Sample HomeBridge Configuration (complete)
 			"startCmd": "cmnd/sonoff/TelePeriod",
 			"startParameter": "120",
 			
-			"patchToSave":"/root/.homebridge/",
+			"pathToSave":"/root/.homebridge/",
 			"savePeriod": "15",
 			"zeroHour": "23",
+			"writeMinAndMax": true,
+			"singleFile": true,
 			
 			"sensorPropertyName": "BME280_2",
 			
@@ -90,7 +92,7 @@ Sample HomeBridge Configuration (minimal)
 			
 			"topic": "tele/sonoff/SENSOR",
 			
-			"patchToSave":"/root/.homebridge/"
+			"pathToSave":"/root/.homebridge/"
 		}
 	]
 }
@@ -109,11 +111,15 @@ Sample HomeBridge Configuration (minimal)
 
 **"startParameter": "60"** - payload for **startCmd**.
 
-**"patchToSave":"/root/.homebridge/"** - path to save text files with temperature data.
+**"pathToSave":"/root/.homebridge/"** - path to save text files with temperature data.
 
 **"savePeriod": "15"** - period (minutes) for saving and check temperature. For save only min. and max. 24h temperature data set with "minus" ex "-15". Minimal preriod 10 minutes. Empty: save every hour.
 
 **"zeroHour": "23"** - time (UTC) at which you want to reset the timer min./max. Empty to reset after 24 hours since the last minimum or maximum.
+
+**"writeMinAndMax"** - only write the log file, no min and max.
+
+**"singleFile"** - write a `_log.csv` instead of separate files for temperature, pressure and humidity.
 
 The files will be saved in the specified path with the "topic" (ex. Sonoff) in the file name ex. "/root/.homebridge/sonoff_temp.csv".
 

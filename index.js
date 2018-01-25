@@ -49,6 +49,7 @@ function TemperatureAndHumidityLogTasmotaAccessory(log, config) {
 
 	/////		this.savePeriod = 1; // FOR TEST ONLY!!!
     this.writeMinAndMax = config["writeMinAndMax"];
+    this.singleFile = config["singleFile"] || false;
 
 	this.pathToSave = config["pathToSave"] || config["patchToSave"] || false;
 	if (this.pathToSave) {
@@ -367,27 +368,42 @@ function TemperatureAndHumidityLogTasmotaAccessory(log, config) {
 		that.log("Saving data every " + this.savePeriod + " minutes to " + that.pathToSave);
 		var j = schedule.scheduleJob("0 */" + this.savePeriod + " * * * *", function() {
 			that.log("Saving data to " + that.pathToSave + "(temp=" + that.temperature + ", pressure=" + that.pressure + ", humidity=" + that.humidity + ")");
-			that.fs.appendFile(that.pathToSave + that.filename + "_temperature.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.temperature + "\n", "utf8", function(err) {
-				if (err) {
-					that.pathToSave = false;
-					that.log("Problem with save file (temperature log)");
-				}
-			});
-			if(that.pressure > 800){
-				that.fs.appendFile(that.pathToSave + that.filename + "_pressure.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.pressure + "\n", "utf8", function(err) {
-					if (err) {
-						that.pathToSave = false;
-						that.log("Problem with save file (_pressure log)");
-					}
-				});
-			}
-            if(that.humidity > 0){
-                that.fs.appendFile(that.pathToSave + that.filename + "_humidity.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.humidity + "\n", "utf8", function(err) {
+
+			if (this.singleFile) {
+                let text = convertDateToStr(that.dataMessage.Time) + "\t" + that.temperature;
+                if (that.pressure > 800) { text = text + "\t" + that.pressure }
+				if (that.humidity > 0) { text = text + "\t" + that.humidity }
+				text = text + "\n";
+                that.fs.appendFile(that.pathToSave + that.filename + "_log.csv", text, "utf8", function (err) {
                     if (err) {
                         that.pathToSave = false;
-                        that.log("Problem with save file (_humidity log)");
+                        that.log("Problem with save file (temperature log)");
                     }
                 });
+			}
+			else {
+                that.fs.appendFile(that.pathToSave + that.filename + "_temperature.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.temperature + "\n", "utf8", function (err) {
+                    if (err) {
+                        that.pathToSave = false;
+                        that.log("Problem with save file (temperature log)");
+                    }
+                });
+                if (that.pressure > 800) {
+                    that.fs.appendFile(that.pathToSave + that.filename + "_pressure.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.pressure + "\n", "utf8", function (err) {
+                        if (err) {
+                            that.pathToSave = false;
+                            that.log("Problem with save file (_pressure log)");
+                        }
+                    });
+                }
+                if (that.humidity > 0) {
+                    that.fs.appendFile(that.pathToSave + that.filename + "_humidity.csv", convertDateToStr(that.dataMessage.Time) + "\t" + that.humidity + "\n", "utf8", function (err) {
+                        if (err) {
+                            that.pathToSave = false;
+                            that.log("Problem with save file (_humidity log)");
+                        }
+                    });
+                }
             }
 		});
 	}
@@ -400,6 +416,9 @@ function TemperatureAndHumidityLogTasmotaAccessory(log, config) {
 			if (err) that.log('ERROR change filename: ' + err);
 		});
         that.fs.rename(that.pathToSave + that.filename + "_humidity.csv", that.pathToSave + that.filename + "_humidity_" + convertDateTofilename(Date()) + ".csv", function(err) {
+            if (err) that.log('ERROR change filename: ' + err);
+        });
+        that.fs.rename(that.pathToSave + that.filename + "_log.csv", that.pathToSave + that.filename + "_log_" + convertDateTofilename(Date()) + ".csv", function(err) {
             if (err) that.log('ERROR change filename: ' + err);
         });
 	});
