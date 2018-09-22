@@ -1,4 +1,7 @@
 /* 
+ * 1.0.2 20180922
+ * Minor improvements
+ * 
  * 1.0.1 20170628
  * Addet "use strict", problem with bad data from BMP sensor solved.
  * 

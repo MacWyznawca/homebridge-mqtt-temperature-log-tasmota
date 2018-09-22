@@ -187,7 +187,7 @@ function TemperatureLogTasmotaAccessory(log, config) {
 
 	this.client.on("message", function(topic, message) {
 		if (topic == that.topic) {
-		//	that.temperature = -49.9;
+			that.temperature = -49.9;
 			try {
 				that.dataMessage = JSON.parse(message);
 			} catch (e) {
@@ -214,10 +214,10 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			} else if (that.dataMessage.hasOwnProperty("HTU21")) {
 				that.temperature = parseFloat(that.dataMessage.HTU21.Temperature);
 			} else if (that.dataMessage.hasOwnProperty("BMP280")) {
-				that.temperature = parseFloat(that.dataMessage.BMP280.Temperature);
+				that.temperature = parseFloat(that.dataMessage.BMP280.Temperature) ; //- 1.0;
 				that.pressure = parseFloat(that.dataMessage.BMP280.Pressure);
 			} else if (that.dataMessage.hasOwnProperty("BME280")) {
-				that.temperature = parseFloat(that.dataMessage.BME280.Temperature);
+				that.temperature = parseFloat(that.dataMessage.BME280.Temperature) ; // - 1.0;
 				that.pressure = parseFloat(that.dataMessage.BME280.Pressure);
 			} else if (that.dataMessage.hasOwnProperty("BMP180")) {
 				that.temperature = parseFloat(that.dataMessage.BMP180.Temperature);
@@ -227,10 +227,13 @@ function TemperatureLogTasmotaAccessory(log, config) {
 			}
 			if (that.temperature > -50){
 				that.service.setCharacteristic(Characteristic.CurrentTemperature, that.temperature);
-				that.service.setCharacteristic(that.AtmosphericPressureLevel, that.pressure);
 				that.service.setCharacteristic(that.Timestamp, convertDateToStr(that.dataMessage.Time));
 			}
+			if (that.pressure > 800 && that.pressure < 1100){
+				that.service.setCharacteristic(that.AtmosphericPressureLevel, that.pressure);
+			}
 			
+				
 			// Write temperature to file
 			if (that.patchToSave) {
 				var zeroDate = that.zeroHour ? (new Date()).setHours(that.zeroHour, 0, 0, 0) : false;
